@@ -587,6 +587,12 @@ ml <- marrangeGrob(p, nrow=5, ncol=5,top="Test set sample results")
 ml
 ```
 
+In case of training problem a trained cnn is available.
+```{r,cache=TRUE}
+model %>% save_model_hdf5("cnn_uf.hdf5")
+#model = model_hdf5("cnn_uf.hdf5")
+```
+
 ### Question
 
 Play with the architecture and try to beat this first model ! Look at the doc ion hoiw to add regulariztion for example.
