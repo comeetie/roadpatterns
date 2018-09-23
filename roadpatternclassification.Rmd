@@ -15,7 +15,7 @@ knitr::opts_chunk$set(message = FALSE)
 
 ## Road Pattern dataset description
 
-The reference data-set used in this workshop come from [https://geo.nyu.edu/catalog/stanford-yk247bg4748](stanford geo laboratory); This source contains polygons of urban areas all over the world with population estimate derived from Landsat images. Urbans ares from North and Central America and from Europe and Russia with a population of more than 200 000 peoples were extracted from this data source. Lets start by loading the some required libraries, the data and draw a little map.
+The reference data-set used in this workshop come from [https://geo.nyu.edu/catalog/stanford-yk247bg4748](stanford geo laboratory); This source contains polygons of urban areas all over the world with population estimate derived from Landsat images. Urbans ares from North and Central America and from Europe and Russia with a population of more than 200 000 peoples were extracted from this data source. Lets start by loading some required libraries, the data and draw a little map. You may start anew r-markdown document or r-script to store your work and follow these first steps. 
 
 ```{r cities,cache=TRUE,message=FALSE}
 # load some libraries
@@ -59,7 +59,7 @@ The final dataset contains informations on 587 urban areas with the folowing fea
 str(cities[,1:6])
 ```
 
-were ang180,ang185,... corresponds to the histogram of street angle for each urban area. The goal of this workshop is to study the link between street network shape or urban fabric and continent of origin. Population density already exhibit difference between Europe and North-America as shown by the following histogram with a lot more of dense urban areas in Europe.
+were ang180,ang185,... correspond to the histogram counts of street angle for each urban area. The goal of this workshop is to study the link between street network shape or urban fabric and continent of origin. Population density already exhibit difference between Europe and North-America as shown by the following histogram with a lot more of dense urban areas in Europe.
 
 ```{r,cache=TRUE,fig.width=7,fig.height=4}
 df_cities = cities %>% mutate(Area=as.numeric(st_area(geometry))) %>% mutate(Density=Pop/Area*10000)
@@ -105,7 +105,7 @@ This will enbale the visualisation of classifier results for pedagogical goals. 
 
 |![Amsterdam Patch](./ImgTrain/Europe/1_Versailles_tiles_226.png "Versaille")   |![Columbus Patch](./ImgTrain/NorthAmerica/2_Columbus2_tiles_306.png "NY")   |![Kansas cityPatch](./ImgTrain/NorthAmerica/2_KansasCity1_tiles_328.png "NY")   |![Turin Patch](./ImgTrain/Europe/1_Turin_tiles_79.png "Turin") 
 
-The two main library that will be used in tjis workshop except the classical **dplyr,tidyr,ggplot,...** are **keras** for neural network and **caret**. Caret offers a unified interface to a lot of machine learning algorithms and will ease some important tasks such as hyper parameter tunning, model evaluation,...
+The two main library that will be used in this workshop except the classical **dplyr,tidyr,ggplot,...** are **keras** for neural network and **caret**. Caret offers a unified interface to a lot of machine learning algorithms and will ease some important tasks such as hyper parameter tunning, model evaluation,...
 
 ```{r,cache=TRUE}
 library(caret)
@@ -134,7 +134,7 @@ Xp.test  = predict(scaler,Xp[-intrain,-1])
 Xp.test$Cont=Xp$Cont[-intrain]
 ```
 
-We may get a first picture of this simple dataset using a scatter plot -since we restrict ourself to two predictors in this first part). Urban areas from North-America exhibit a lower density and an higher entropie. These variables may then be helpfull to distinguish these two classes. We will start by running two classical classifier namely **logistic regression** and **k-nn**.
+We may get a first picture of this simple dataset using a scatter plot (since we restrict ourself to two predictors in this first part). Urban areas from North-America exhibit a lower density and an higher entropie. These variables may then be helpfull to distinguish these two classes. We will start by running two classical classifier namely **logistic regression** and **k-nn**.
 
 ```{r,cache=TRUE,fig.width=8.5,fig.height=8}
 ggplot(Xp.train)+geom_point(aes(x=Density,y=entropie,color=Cont),size=3)+
@@ -144,7 +144,7 @@ ggplot(Xp.train)+geom_point(aes(x=Density,y=entropie,color=Cont),size=3)+
 
 ### GLM
 
-We start with a simple logistic regression, which can easily be estimated in R thanks to the GLM function from base R. The target feature must be a factor with two levels and the family argument must be set to **binomial**. The predict function return log-odds by default but the "response" type argument can be used to get probabilities. These probaibilities can then be used to reconstruct the most probable decision and compute a confusion matrix on the train set by comparing the true label with the predicted ones.
+We start with a simple logistic regression, which can easily be estimated in R thanks to the GLM function from base R. The target feature must be a factor with two levels and the family argument must be set to **binomial**. The predict function return log-odds by default but the "response" type argument can be used to get probabilities. These probaibilities can then be used to reconstruct the most probable decision and compute a confusion matrix on the train set by comparing the true labels with the predicted ones.
 
 ```{r,cache=TRUE}
 # estimate the logistic regression parameters
@@ -186,13 +186,13 @@ ggplot(Xpgrid)+geom_tile(aes(x=Density,y=entropie,fill=proba),alpha=0.4)+
   coord_equal()+theme_bw()
 ```
 
-As expected the decision boundary is linear with repsect to the features. And correspond to our expectation, Dense uran areas with a high entropie for the roads orientation are predicted as European's and sparsely populated areas with a low entropie as coming from North-America.
+As expected the decision boundary is linear with repsect to the features. And correspond to our expectation, denses urban areas with a high entropie for the roads orientation are predicted as European's and more sparsely populated areas with a low entropie as coming from North-America.
 
 Let move on to another classic classifier based on nearest neighbour.
 
 ### K-nn
 
-K-nn use the nearest neighbours of a point to take a decision based on majority voting. We chose to  analyze this classifier since it introduce an "hyper-parameter" the number of neighbours taken into acount. This hyper-parameters must be set in order to get a final classifier. With this model we will make our first step in hyper-parameter tunning. 
+K-nn use the nearest neighbours of a point to take a decision based on majority voting. We chose to  analyze this classifier since it introduce an "hyper-parameter" the number of neighbours taken into acount. This hyper-parameters must be set in order to get a final classifier and is not optimized by the learning algorithm. With this model we will make our first step in hyper-parameter tunning. 
 To begin lets start with the simplest nearest neighbour classifier which only take into account one neighbour. We may fit the classifier and estimate its performance on the training set with these commands:
 
 
@@ -242,9 +242,9 @@ marrangeGrob(gg,nrow=1,ncol=2,top="Visual comparison of k=1 and k=7 decision fun
 ```
 
 
-As expected the decision function with k=7 is smoother and isolated urban areas from europes do not create little place were the classifier predict europe anymore. To chose a good value for k we may rely on cross validation and grid search. For each value of k we will estimate our generalisation performance with 10-fold cross validation (split the training set in ten fit the classifier on 9/10 and estimate the performance on the remaining part do this for each fold and average, to get a better estimate this procedure we will furthermore performed this with 5 random split of the dataset in folds).
+As expected the decision function with k=7 is smoother and isolated urban areas from europes do not create little place were the classifier predict europe anymore. To chose a good value for k we may rely on cross validation and grid search. For each value of k we will estimate our generalisation performance with 10-fold cross validation (split the training set in ten fit the classifier on 9/10 and estimate the performance on the remaining part do this for each fold and average, to get an even better estimate we will furthermore performed this with 5 random split of the dataset in folds).
 
-If we plot our metric with respect to our hyper-parameter k we get the folllowing picture: 
+If we plot our performance metric with respect to our hyper-parameter k we get the folllowing: 
 
 ```{r,cache=TRUE}
 # build the grid
@@ -298,7 +298,7 @@ Xa.test  = predict(scaler,Xan[-intrain,])
 ```
 
 
-The train set has now `r dim(Xa.train)[2]` features for `r dim(Xa.train)[1]` urban areas, so overfitting can be more important. The features correspond to orientation histograms, estimated population and total length of road for each type (primary,secondary,...). These features were normalized by the total area of each urban areas, to remove the discrepency between urban areas sizes. Final models will certainly select the more importants features and not use all of them. We may first try the **hdda** method which is a generative methods designed to work in such settings. We will see how to tune a model over 2 hyperparameters the model type and the threeshold used for fixing the dimensionality of the decision space (dimensionality reduction). Look at the grid and the fitcv results.
+The train set has now `r dim(Xa.train)[2]` features for `r dim(Xa.train)[1]` urban areas, so overfitting can be a more important issue than previously. The features correspond to orientation histograms, estimated population and total length of road for each type (primary,secondary,...). These features were normalized by the total area of each urban areas, to remove the discrepency between urban areas sizes. Final models will certainly select the more importants features and not use all of them. We may first try the **hdda** method which is a generative methods designed to work in such settings. We will see how to tune a model over 2 hyperparameters the model type and the threeshold used for fixing the dimensionality of the decision space (dimensionality reduction). Look at the grid and the fitcv results.
 
 
 ```{r,cache=TRUE}
@@ -320,80 +320,28 @@ We heave already tried a lot of thing together so lets try to respond to some mo
 
 ### Question 1
 Fit a k-nn on the complete data-set and tune k.
-```{r,cache=TRUE}
-# build the grid
-grid = expand.grid(k=1:20)
-# define the parameters of the crossvalidation number of fold and repetitions 
-control = trainControl(method="repeatedcv", number=10,repeats = 5)
-# perform grid search
-fitcv <- train(Cont~., data=Xa.train, method="knn", metric="Accuracy", trControl=control,tuneGrid=grid)
-# display results
-ggplot(fitcv$results)+geom_line(aes(x=k,y=Accuracy))+
-  geom_point(aes(x=k,y=Accuracy),fill="white",size=3,shape=21)
-predlab.test = predict(fitcv,Xa.test,type="raw")
-mc.test = confusionMatrix(predlab.test,Xa.test$Cont)
-mc.test$overall[1]
-```
 
 
 
 ### Question 2
 
-Help yourself in using caret to fit a cart tree (with **rpart**) and compute the model test accuracy. To get a visual explanation of this type of algorithm you may first spend some minutes with these [http://www.r2d3.us/visual-intro-to-machine-learning-part-1/](visuals tutorials (1)) and [http://www.r2d3.us/visual-intro-to-machine-learning-part-2/]((2)). you may visualize the structure of our final tree with the prp function of the raprt.plot package. To get the final model you may acces the finalModel slot of the list returned by the train function of caret. You may also use the function **varImp** on this type of model to get a score of importance for each variable (look at the doc).
+Help yourself in using caret to fit a cart tree (with **rpart**) and compute the model test accuracy. To get a visual explanation of this type of algorithm you may first spend some minutes with these [http://www.r2d3.us/visual-intro-to-machine-learning-part-1/](visuals tutorials (1)) and [http://www.r2d3.us/visual-intro-to-machine-learning-part-2/]((2)). you may visualize the structure of your final tree with the prp function of the rpart.plot package. To get the final model you may acces the finalModel slot of the list returned by the train function of caret. You may also use the function **varImp** on this type of model to get a score of importance for each variable (look at the doc).
 
-```{r,cache=TRUE}
-# build the grid
-grid = expand.grid(cp=seq(0,0.16,0.02))
-# define the parameters of the crossvalidation number of fold and repetitions 
-control = trainControl(method="repeatedcv", number=10,repeats = 5)
-# perform grid search
-fitcv <- train(Cont~., data=Xa.train, method="rpart", metric="Accuracy", trControl=control,tuneGrid=grid)
-# display results
-ggplot(fitcv$results)+geom_line(aes(x=cp,y=Accuracy))+
-  geom_point(aes(x=cp,y=Accuracy),fill="white",size=3,shape=21)
-```
-
-```{r,cache=TRUE}
-predlab.test = predict(fitcv,Xa.test,type="raw")
-mc.test = confusionMatrix(predlab.test,Xa.test$Cont)
-mc.test$overall[1]
-```
 
 
 ### Questions 3
 
-Try to obtain better results with boosted tree with the **gbm** or **xgbTree** model; **!Warning!** These models have a lot more of hyper-parameters to tune. Spend some time in reading the doc to understand their roles  and begin with small grids.
+Try to obtain better results with boosted tree with the **gbm** or **xgbTree** model; **!Warning!** These models have a lot more of hyper-parameters to tune. Spend some time in reading the doc to understand their roles  and begin with small grids, you may keep some of them to constant values.
 
 
 
-
-```{r,cache=TRUE}
-xgbGrid = expand.grid(eta = 0.1, 
-                        colsample_bytree=c(0.7,0.8,0.9),
-                        max_depth=c(6,9,12),
-                        nrounds=seq(10,400,10),
-                        gamma=1,
-                        min_child_weight=5,
-                        subsample=0.7)
-control = trainControl(method="repeatedcv", number=10,repeats = 5)
-fit <- train(Cont~., data=Xa.train, method="xgbTree", metric="Accuracy", trControl=control,tuneGrid=xgbGrid,verbose=FALSE)
-# display results
-ggplot(fit)
-```
-
-```{r,cache=TRUE}
-predlab.test = predict(fit,Xa.test)
-mc.test = confusionMatrix(predlab.test,Xa.test$Cont)
-mc.test$overall[1]
-```
-
-If you want to do more you may explore the **glmnet** package to perform feature selection with glm. But you may also move on the neural network part.
+If you want to do more you may explore the **glmnet** package to perform feature selection with glm. But you may also move on to the neural network part of this workshop.
 
 
 
 ## ConvNN and keras on image patchs
 
-This last part of the workshop copncerns classification of image patches with convolutional neural networks. It's a short introduction to the keras package and to convolutional neural networks.
+This last part of the workshop concerns classification of image patches with convolutional neural networks. It's a short introduction to the keras package and to convolutional neural networks.
 
 We start by defining some constant like the place of the training and testing images patches and their size.
 ```{r,cache=TRUE}
@@ -410,7 +358,7 @@ target_size = c(img_width, img_height)
 cls = c("Europe","NorthAmerica")
 ```
 
-For keras to read the image we define image generator from the folder (here we could have used data-augmentation google it if you are curious) but for now our genrator will just read the image rescale them to get matrix of float between 0 and 1. We construct two such generators, one for the training images and one for the validation images used to avoid overfitting. In each folder their is one subfolder for each class and keras use this to define the labels of each patch.
+For keras to read the image we define image generator from the folder (here we could have used data-augmentation google it if you are curious) but for now our genrator will just read the image rescale them to get matrix of float between 0 and 1 ready to fed our neural nets. We construct two such generators, one for the training images and one for the validation images used to check for possible overfitting problems. In each folder their is one subfolder for each class and keras use this to define the labels of each patch.
 
 ```{r,cache=TRUE}
 data_gen = image_data_generator(
@@ -438,7 +386,7 @@ val_image_array_gen <- flow_images_from_directory(val_image_files_path,
 
 ```
 
-We can now build a first model, i've tried an architecture with  a stack of two layer that combine convolution and max pooling (with kernel of size 5*5) . After these 4 layer the image are flattened and given to a final dense layer of size 20 which ffed the final layer of decision between the two classes. The model definition in keras follow it's quite readable.
+We can now build a first model, i've tried an architecture with  a stack of two layer that combine convolution and max pooling (with kernel of size 5*5) . After these 4 layer the image are flattened and given to a final dense layer of size 20 which fed the final layer of decision between the two classes. The model definition in keras follow it's quite readable.
 
 ```{r,cache=TRUE}
 # initialise model
@@ -452,7 +400,7 @@ model %>%
   # Use max pooling
   layer_max_pooling_2d(pool_size = c(5,5)) %>%
 
-  layer_conv_2d(filter = 15, kernel_size = c(5,5), padding = "same", input_shape = c(img_width, img_height,1)) %>%
+  layer_conv_2d(filter = 15, kernel_size = c(5,5), padding = "same") %>%
   layer_activation("relu") %>%
   
   # Use max pooling
@@ -472,7 +420,7 @@ model %>%
 ```
 
 
-For the model to work we must compile it. This will construct a model which will be ready to fit. to do gthat we must define the optimizer that we will use, the loss (the function optimized during training) and additional metrics of interest.
+For the model to work we must compile it. This will construct a model which will be ready to train. To do gthat we must define the optimizer that we will use, the loss (the function optimized during training) and eventually additional metrics of interest.
 ```{r,cache=TRUE}
 # compile
 model %>% compile(
@@ -597,7 +545,7 @@ ml <- marrangeGrob(p, nrow=5, ncol=5,top="Test set sample results")
 ml
 ```
 
-In case of training problem a trained cnn is available.
+In case of training problem or if it takes too long a trained cnn is available in the project directory.
 ```{r,cache=TRUE}
 model %>% save_model_hdf5("cnn_uf.hdf5")
 #model = model_hdf5("cnn_uf.hdf5")
@@ -605,7 +553,7 @@ model %>% save_model_hdf5("cnn_uf.hdf5")
 
 ### Question
 
-Play with the architecture and try to beat this first model ! Look at the doc ion hoiw to add regulariztion for example.
+Play with the architecture and try to beat this first model ! Look at the doc on how to add regulariztion for example.
 
 ## Project ideas
 
@@ -616,4 +564,6 @@ Perhaps the image patch results can be used to construct a classifier for urban 
 https://stanford.edu/~shervine/teaching/cs-229.html
 
 https://playground.tensorflow.org/
+
+
 
